@@ -1,16 +1,19 @@
-Content-Type: multipart/mixed; boundary="===============0272653996487416486=="
+Content-Type: multipart/mixed; boundary="===============4477199518037106445=="
 MIME-Version: 1.0
 
---===============0272653996487416486==
+--===============4477199518037106445==
 Content-Type: text/cloud-config; charset="utf-8"
 MIME-Version: 1.0
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="part1_config.yaml"
 
-I2Nsb3VkLWNvbmZpZwpwYWNrYWdlX3VwZGF0ZTogdHJ1ZQpwYWNrYWdlczoKICAtIGN1cmwKICAt
-IGNhLWNlcnRpZmljYXRlcwoKCg==
+I2Nsb3VkLWNvbmZpZwp1c2VyczoKICAtIG5hbWU6IG5peGhhbAogICAgZ3JvdXBzOiBzdWRvCiAg
+ICBzdWRvOiBbJ0FMTD0oQUxMKSBOT1BBU1NXRDpBTEwnXQogICAgc2hlbGw6IC9iaW4vYmFzaAog
+ICAgc3NoX2F1dGhvcml6ZWRfa2V5czoKICAgICAgLSBzc2gtZWQyNTUxOSBBQUFBQzNOemFDMWxa
+REkxTlRFNUFBQUFJSnJLUVJXVmpKTDFSSWZhR3J5YTNJMzJjU01YQU5lM2ZnbXNMZ29Ncyt3QiBu
+aXhoYWxAbml4LXVidW50dQoK
 
---===============0272653996487416486==
+--===============4477199518037106445==
 Content-Type: text/x-shellscript; charset="utf-8"
 MIME-Version: 1.0
 Content-Transfer-Encoding: base64
@@ -62,5 +65,5 @@ ICLinIUgSmF2YTogICAgICAgICAgICQoamF2YSAtdmVyc2lvbiAyPiYxIHwgaGVhZCAtMSkiCmVj
 aG8gIuKchSBUcmVlOiAgICAgICAgICAgJCh0cmVlIC0tdmVyc2lvbiB8IGhlYWQgLTEpIgoKZWNo
 byAiUmF3IHNjcmlwdCBmaW5pc2hlZCBhdCAkKGRhdGUpIiA+PiAvdmFyL2xvZy9wYXJ0Mi5sb2cK
 
---===============0272653996487416486==--
+--===============4477199518037106445==--
 

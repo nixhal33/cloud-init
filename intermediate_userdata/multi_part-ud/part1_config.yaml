@@ -1,7 +1,9 @@
 #cloud-config
-package_update: true
-packages:
-  - curl
-  - ca-certificates
-
+users:
+  - name: nixhal
+    groups: sudo
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJrKQRWVjJL1RIfaGrya3I32cSMXANe3fgmsLgoMs+wB nixhal@nix-ubuntu
 
