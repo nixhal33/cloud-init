@@ -1,0 +1,100 @@
+## template: jinja
+#cloud-config
+# ============================================================
+# PRODUCTION-STYLE CLOUD-INIT EXAMPLE
+# Combines: schema-valid syntax, bootcmd/runcmd ordering,
+# idempotent scripting, SSM-based secrets (no hardcoded creds),
+# proper user/SSH setup, and structured logging.
+# ============================================================
+
+# ---- Basic system update ----
+package_update: true
+package_upgrade: true
+
+packages:
+  - curl
+  - ca-certificates
+  - unzip
+  - tree
+  - awscli
+
+# ---- User creation (schema-correct key names) ----
+users:
+  - default
+  - name: devops
+    groups: sudo, docker
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    shell: /bin/bash
+    ssh-authorized-keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJrKQRWVjJL1RIfaGrya3I32cSMXANe3fgmsLgoMs+wB nixhal@nix-ubuntu
+
+# ---- bootcmd: runs EVERY boot, very early ----
+# Used here as a guard: don't let anything proceed until
+# networking/apt mirrors are actually reachable.
+bootcmd:
+  - echo "[$(date)] Boot sequence starting" >> /var/log/provision.log
+  - until curl -s https://download.docker.com > /dev/null; do sleep 2; done
+  - echo "[$(date)] Network confirmed reachable" >> /var/log/provision.log
+
+# ---- write_files: the idempotent install script ----
+write_files:
+  - path: /root/provision.sh
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      set -euo pipefail
+
+      LOG=/var/log/provision.log
+      echo "[$(date)] Starting provisioning script" >> "$LOG"
+
+      # ---- Docker (idempotent) ----
+      if command -v docker &> /dev/null; then
+        echo "[$(date)] Docker already installed, skipping" >> "$LOG"
+      else
+        echo "[$(date)] Installing Docker..." >> "$LOG"
+        install -m 0755 -d /etc/apt/keyrings
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+        chmod a+r /etc/apt/keyrings/docker.asc
+        tee /etc/apt/sources.list.d/docker.sources <<EOF
+      Types: deb
+      URIs: https://download.docker.com/linux/ubuntu
+      Suites: $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
+      Components: stable
+      Architectures: $(dpkg --print-architecture)
+      Signed-By: /etc/apt/keyrings/docker.asc
+      EOF
+        apt update -y
+        apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+        systemctl enable docker
+        systemctl start docker
+        echo "[$(date)] Docker installed: $(docker --version)" >> "$LOG"
+      fi
+
+      # ---- Add devops user to docker group (idempotent, no hardcoded username) ----
+      if id "devops" &>/dev/null; then
+        usermod -aG docker devops
+        echo "[$(date)] Added devops to docker group" >> "$LOG"
+      fi
+
+      # ---- Pull a secret at runtime instead of hardcoding it ----
+      # Requires an IAM instance profile with ssm:GetParameter (+ kms:Decrypt
+      # if the parameter uses a customer-managed key).
+      if aws ssm get-parameter --name "/myapp/db_password" --with-decryption --query Parameter.Value --output text > /tmp/dbpass 2>/dev/null; then
+        DB_PASS=$(cat /tmp/dbpass)
+        rm -f /tmp/dbpass
+        echo "DB_PASS=${DB_PASS}" > /etc/myapp.env
+        chmod 600 /etc/myapp.env
+        echo "[$(date)] Retrieved DB secret from SSM Parameter Store" >> "$LOG"
+      else
+        echo "[$(date)] No SSM parameter found or no IAM permission — skipping secret fetch" >> "$LOG"
+      fi
+
+      echo "[$(date)] Provisioning script finished successfully" >> "$LOG"
+
+# ---- runcmd: runs ONCE, after packages/users modules complete ----
+runcmd:
+  - /root/provision.sh
+  - echo "[$(date)] runcmd stage complete" >> /var/log/provision.log
+
+# ---- final_message: confirms cloud-init itself finished ----
+final_message: "Cloud-init provisioning complete after $UPTIME seconds. Check /var/log/provision.log for details."
