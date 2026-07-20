@@ -1,0 +1,23 @@
+#cloud-config
+package_update: true
+package_upgrade: true
+packages:
+  - git
+  - curl
+  - htop
+
+users:
+  - name: devops
+    groups: sudo
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    shell: /bin/bash
+    ssh-authorized-keys:
+      - ssh-rsa AAAA...your_public_key_here...
+
+write_files:
+  - path: /home/devops/welcome.txt
+    content: |
+      If you can read this, cloud-init worked!
+
+runcmd:
+  - echo "cloud-init finished at $(date)" >> /var/log/my-cloudinit-test.log   
