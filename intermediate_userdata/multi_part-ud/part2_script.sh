@@ -44,7 +44,7 @@ echo "Tree installed successfully!"
 echo "Setting up group permissions..."
 
 # Add current user to docker group
-sudo usermod -aG docker ubuntu
+sudo usermod -aG docker "$(logname)"
 echo "✅ Added ubuntu to docker group"
 
 # ─── SUMMARY ─────────────────────────────────────────
