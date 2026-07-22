@@ -13,7 +13,7 @@ users:
     sudo: ['ALL=(ALL) NOPASSWD:ALL']
     shell: /bin/bash
     ssh-authorized: 
-      - ssh-ed25519.pub---->add your own ssh key bihhh!!
+      - ssh-ed25519 Copyfilefrom.ssh/id_ed25519.pubandputhereExampleKeyReplaceMe
 
 
 write_files:

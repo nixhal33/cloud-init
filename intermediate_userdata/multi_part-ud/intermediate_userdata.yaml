@@ -1,0 +1,53 @@
+#cloud-config
+bootcmd:
+  - echo "Waiting for network..." >> /var/log/boot-sequence.log
+  - until curl -s https://download.docker.com > /dev/null; do sleep 2; done
+
+package_update: true
+packages:
+  - docker.io
+
+runcmd:
+  - echo "Network confirmed, proceeding with install" >> /var/log/boot-sequence.log
+  - systemctl enable docker
+  - systemctl start docker
+
+#cloud-config
+write_files:
+  - path: /root/install-stack.sh
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      set -e
+
+      if command -v docker &> /dev/null; then
+        echo "Docker already installed, skipping."
+      else
+        echo "Installing Docker..."
+        apt update -y
+        apt install -y docker.io
+      fi
+
+      if ! id "devops" &>/dev/null; then
+        useradd -m -s /bin/bash -G sudo,docker nixhal
+        echo "Created devops user"
+      else
+        echo "devops user already exists, skipping"
+      fi
+
+runcmd:
+  - /root/install-stack.sh
+
+#cloud-config
+users:
+  - name: {{ ds.meta_data.username | default('devops') }}
+    groups: sudo, docker
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+    shell: /bin/bash
+
+write_files:
+  - path: /etc/hostname_note.txt
+    content: |
+      This instance is: {{ v1.local_hostname }}
+      Instance ID: {{ v1.instance_id }}
+
