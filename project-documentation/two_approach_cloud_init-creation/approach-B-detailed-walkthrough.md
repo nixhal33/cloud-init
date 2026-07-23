@@ -24,30 +24,30 @@ once the VM actually boots.
 ## PART 2 — Create the base VM (this one will become your "golden image")
 
 ```bash
-qm create 9001 --name approach-b-base --memory 2048 --cores 2 --net0 virtio,bridge=vmbr0
+qm create 9006 --name devops-stack-B --memory 8192 --cores 4 --net0 virtio,bridge=vmbr0
 ```
-- Same flags as before, but note the **ID is 9001**, not 9000 — keep this
+- Same flags as before, but note the **ID is 9006**, not 9000 — keep this
   separate from your Approach A template so you can compare both side by side
   without overwriting anything.
-- `--name approach-b-base` — labeling it clearly as the not-yet-finished
+- `--name devops-stack-B` — labeling it clearly as the not-yet-finished
   "base" image, before it becomes a template
 
 ```bash
-qm importdisk 9001 jammy-server-cloudimg-amd64.img local-lvm
+qm importdisk 9006 jammy-server-cloudimg-amd64.img local-lvm
 ```
-Imports the same cloud image as an unattached disk into VM 9001.
+Imports the same cloud image as an unattached disk into VM 9006.
 
 ```bash
-qm set 9001 --scsihw virtio-scsi-pci --scsi0 local-lvm:vm-9001-disk-0
-qm set 9001 --ide2 local-lvm:cloudinit
-qm set 9001 --boot order=scsi0
-qm set 9001 --serial0 socket --vga serial0
+qm set 9006 --scsihw virtio-scsi-pci --scsi0 local-lvm:vm-9006-disk-0
+qm set 9006 --ide2 local-lvm:cloudinit
+qm set 9006 --boot order=scsi0
+qm set 9006 --vga 
 ```
 Identical purpose to Approach A Part 4 — attach the OS disk, add the
 Proxmox-managed cloud-init drive, set boot order, configure serial console.
 
 ```bash
-qm resize 9001 scsi0 +20G
+qm resize 9006 scsi0 +50G
 ```
 Same as before — grow the disk before you start installing a full DevOps
 stack, since Docker images/K8s/Helm charts will need real space. You may even
@@ -64,18 +64,18 @@ immediately, you boot it as a **working, temporary VM** so you can manually
 install software inside it.
 
 ```bash
-qm set 9001 --ciuser devops --sshkeys /root/.ssh/id_ed25519.pub --ipconfig0 ip=dhcp
+qm set 9006 --ciuser nix-devops --sshkeys /root/.ssh/id_ed25519.nix.pub --ipconfig0 ip=192.168.50.xxx/24,gw=192.168.xx.x 
 ```
 - `--ciuser devops` — tells Proxmox's auto-generated cloud-init data to create
-  a user called `devops` (simpler than a full custom YAML, since this is just
+  a user called `nix-devops` (simpler than a full custom YAML, since this is just
   a temporary working session, not the final per-clone config)
-- `--sshkeys /root/.ssh/id_ed25519.pub` — **note this path is on the Proxmox
+- `--sshkeys /root/.ssh/id_ed25519.nix.pub` — **note this path is on the Proxmox
   host**, not your laptop. If your public key isn't already there, copy it
   over first: `scp ~/.ssh/id_ed25519.pub root@<pve-host>:/root/.ssh/`
-- `--ipconfig0 ip=dhcp` — get an IP so you can actually SSH in
+- `--ipconfig0 ip=dhcp` — get an IP so you can actually SSH in and it's a dynamic ip whereas i have set permanent/static ip explicitly defining ip=xxx.xxx.xx.xxx/24,gw=xxx.xxx.xx.xx as ip address with subnet and gateway
 
 ```bash
-qm start 9001
+qm start 9006
 ```
 Boots the VM. Cloud-init runs its lightweight default job here (create
 `devops` user + inject key) — nothing heavy yet.
@@ -87,7 +87,7 @@ Boots the VM. Cloud-init runs its lightweight default job here (create
 From your workstation (get the IP from Proxmox UI or your DHCP leases):
 
 ```bash
-ssh devops@<vm-ip>
+ssh nix-devops@<vm-ip>
 ```
 
 Now run your existing install script **directly**, interactively, once:
@@ -158,7 +158,7 @@ sudo shutdown now
 Back on the **Proxmox host**:
 
 ```bash
-qm template 9001
+qm template 9006
 ```
 Same meaning as Approach A — freezes this VM as read-only, clone-only from
 here on. Except this time, the frozen disk **already contains Docker, git,
@@ -169,11 +169,11 @@ Helm, kubectl fully installed** — that's the entire point of Approach B.
 ## PART 7 — Clone for an actual dev/UAT server
 
 ```bash
-qm clone 9001 102 --name dev-approach-b --full
+qm clone 9006 102 --name dev-approach-b --full
 ```
 Same reasoning as Approach A's clone step — full, independent clone.
 
-```bash
+```b0ash
 qm set 102 --ciuser devops --sshkeys /root/.ssh/id_ed25519.pub --ipconfig0 ip=dhcp
 ```
 - Since the heavy software is already baked in, this clone's cloud-init job
