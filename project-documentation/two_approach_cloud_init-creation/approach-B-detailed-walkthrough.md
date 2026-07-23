@@ -64,14 +64,14 @@ immediately, you boot it as a **working, temporary VM** so you can manually
 install software inside it.
 
 ```bash
-qm set 9006 --ciuser nix-devops --sshkeys /root/.ssh/id_ed25519.nix.pub --ipconfig0 ip=192.168.50.xxx/24,gw=192.168.xx.x 
+qm set 9006 --ciuser nix-devops --cipassword 'nix@wwe3390' --sshkeys /root/.ssh/id_ed25519.nix.pub --ipconfig0 ip=192.168.50.xxx/24,gw=192.168.xx.x 
 ```
-- `--ciuser devops` — tells Proxmox's auto-generated cloud-init data to create
-  a user called `nix-devops` (simpler than a full custom YAML, since this is just
-  a temporary working session, not the final per-clone config)
+- `--ciuser devops` — tells Proxmox's auto-generated cloud-init data to create a user called `nix-devops` (simpler than a full custom YAML, since this is just a temporary working session, not the final per-clone config)
+- `--cipassword 'nix@wwe33'` — tells Proxmox's auto-generated cloud-init data to put the password to the user called `nix-devops` 
 - `--sshkeys /root/.ssh/id_ed25519.nix.pub` — **note this path is on the Proxmox
   host**, not your laptop. If your public key isn't already there, copy it
-  over first: `scp ~/.ssh/id_ed25519.pub root@<pve-host>:/root/.ssh/`
+  Basically, I have first copied my own host ssh keys into my pve server terminal and gave the exact location of my .pub key of my host system. 
+  over first: `scp ~/.ssh/id_ed25519.nix.pub root@<pve-host>:/root/.ssh/`
 - `--ipconfig0 ip=dhcp` — get an IP so you can actually SSH in and it's a dynamic ip whereas i have set permanent/static ip explicitly defining ip=xxx.xxx.xx.xxx/24,gw=xxx.xxx.xx.xx as ip address with subnet and gateway
 
 ```bash
