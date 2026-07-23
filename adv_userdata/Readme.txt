@@ -1,0 +1,1 @@
+This is a production level devops-stack configuration file which contains the installation and starting of all devops stack file ie: docker,kubernetes,helm & monitoring stacks like prometheus and grafana

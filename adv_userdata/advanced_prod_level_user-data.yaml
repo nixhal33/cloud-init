@@ -1,0 +1,85 @@
+root@pve:/var/lib/vz/snippets# cat prod_level_user-data.yaml 
+#cloud-config
+# 1. Core Operating System Packages & Advanced DevOps Diagnostic Utilities
+package_update: true
+package_upgrade: true
+packages:
+  - curl
+  - wget
+  - git
+  - jq
+  - net-tools
+  - iputils-ping
+  - unzip
+  - open-iscsi
+  - nfs-common
+  - tree
+  - htop
+  - tmux
+  - ncdu
+  - rsync
+  - traceroute
+  - dnsutils
+
+# 2. User Configuration
+users:
+  - name: finops
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: sudo
+    shell: /bin/bash
+    lock_passwd: true
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJrKQRWVjJL1RIfaGrya3I32cSMXANe3fgmsLgoMs+wB nixhal@nix-ubuntu
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIA5CUuZREnwipQqMBBYSQYjVJTFkUMtyAvlyUcg2/vNz prabhu.chitrakar@techhaus.dev
+
+# 3. The Automation Pipeline (Runtimes + DevOps Stack)
+runcmd:
+  # --- SECTION A: INSTALL RUNTIMES & TOOLS ---
+  # Install Docker Engine safely via convenience script
+  - curl -fsSL https://get.docker.com | sh
+  - systemctl enable docker && systemctl start docker
+  - usermod -aG docker finops
+
+  # Install MicroK8s Kubernetes
+  - snap install microk8s --classic --channel=1.31/stable
+  - microk8s status --wait-ready
+  - usermod -aG microk8s finops
+
+  # Enable Kubernetes Core Requirements
+  - microk8s enable dns
+  - microk8s enable hostpath-storage
+
+  # Install Helm Manager Binary safely
+  - curl -fsSL https://baltocdn.com | gpg --dearmor | tee /usr/share/keyrings/helm.gpg > /dev/null
+  - echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com all main" | tee /etc/apt/sources.list.d/helm-stable-debian.list
+  - apt-get update && apt-get install -y helm
+
+  # --- SECTION B: DEPLOY THE FULL DEVOPS APPS STACK ---
+  - export KUBECONFIG=/var/snap/microk8s/current/credentials/client.config
+
+  # 1. Deploy Traefik Ingress Engine
+  - /snap/bin/helm repo add traefik https://github.io --kubeconfig /var/snap/microk8s/current/credentials/client.config
+  - /snap/bin/helm repo update --kubeconfig /var/snap/microk8s/current/credentials/client.config
+  - /snap/bin/microk8s kubectl create namespace ingress || true
+  - /snap/bin/helm install traefik traefik/traefik -n ingress --kubeconfig /var/snap/microk8s/current/credentials/client.config
+
+  # 2. Deploy ArgoCD (GitOps Engine)
+  - /snap/bin/microk8s kubectl create namespace argocd || true
+  - /snap/bin/microk8s kubectl apply -n argocd -f https://githubusercontent.com
+
+  # 3. Deploy Monitoring Stack (Prometheus Core & Grafana Dashboards)
+  - /snap/bin/microk8s kubectl create namespace monitor || true
+  - /snap/bin/helm repo add prometheus-community https://github.io --kubeconfig /var/snap/microk8s/current/credentials/client.config
+  - /snap/bin/helm repo update --kubeconfig /var/snap/microk8s/current/credentials/client.config
+  - /snap/bin/helm install kube-prom-stack prometheus-community/kube-prometheus-stack -n monitor --set grafana.adminPassword=admin123 --kubeconfig /var/snap/microk8s/current/credentials/client.config
+
+  # --- SECTION C: USER ENVIRONMENT CONVENIENCE ---
+  - mkdir -p /home/finops/.kube
+  - microk8s config > /home/finops/.kube/config
+  - chown -R finops:finops /home/finops/.kube
+  - echo "alias kubectl='microk8s kubectl'" >> /home/finops/.bashrc
+  - echo "alias helm='microk8s helm'" >> /home/finops/.bashrc
+  - chown finops:finops /home/finops/.bashrc
+
+final_message: "DevOps Core Engine & Diagnostics Full Stack deployed completely for user finops!"
+
