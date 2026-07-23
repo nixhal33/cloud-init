@@ -41,7 +41,7 @@ Imports the same cloud image as an unattached disk into VM 9006.
 qm set 9006 --scsihw virtio-scsi-pci --scsi0 local-lvm:vm-9006-disk-0
 qm set 9006 --ide2 local-lvm:cloudinit
 qm set 9006 --boot order=scsi0
-qm set 9006 --vga 
+qm set 9006 --vga std
 ```
 Identical purpose to Approach A Part 4 — attach the OS disk, add the
 Proxmox-managed cloud-init drive, set boot order, configure serial console.
